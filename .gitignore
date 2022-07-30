@@ -7,3 +7,6 @@ package-lock.json
 
 # ignore mac files
 .DS_Store
+
+# swp files
+.swp
