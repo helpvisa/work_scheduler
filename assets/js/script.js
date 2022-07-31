@@ -78,6 +78,8 @@ function updateHeader() {
     var day = currentDate.format("ddd, h:mm a");
 
     dateHeaderEl.text(day);
+
+    updatePlans(); // update plans here too, since it will be called every ten seconds
 }
 
 // create and return date slot for planner date list
