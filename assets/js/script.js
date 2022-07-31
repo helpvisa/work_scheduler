@@ -22,6 +22,7 @@ for (var i = 9; i < 18; i++) { // 9 - 5 workday!
 // create empty array if no savedata could be loaded
 if (!savedPlans) {
     savedPlans = []
+    updatePlans();
 }
 // otherwise load plans
 else {
