@@ -5,21 +5,28 @@ var plannerEl = $("#planner");
 
 //**** global variables ****//
 var currentDate = moment(); // call moment.js to get the current date in local time
+var currentPlans = [] // stores dynamically created plans (can be looped over to modify, save, load into, etc)
 var savedPlans = JSON.parse(localStorage.getItem("plans"));
-if (!savedPlans) { // create empty array if no savedata could be loaded
-    savedPlans = []
-}
 
 
 //**** main body of code ****//
 // update date every second for super accurate timekeeping!
 updateHeader(); // set initial date
-setInterval(updateHeader, 1000 * 60); // update
+setInterval(updateHeader, 1000 * 10); // update every 10 seconds (make sure minute value is *mostly* in sync, updating less often would lead to desync)
 
 // generate hourly timeslots
 for (var i = 9; i < 18; i++) { // 9 - 5 workday!
     var currentEntry = createHourEntry(i);
     plannerEl.append(currentEntry);
+}
+// create empty array if no savedata could be loaded
+if (!savedPlans) {
+    savedPlans = []
+}
+// otherwise load plans
+else {
+    loadPlans();
+    updatePlans();
 }
 
 // check for click events on the hourly timeslots (for editing)
@@ -51,14 +58,15 @@ $(".save").on("click", function () {
 
     // recreate plan text element
     var newPlan = $("<p>")
-        .addClass("plan my-auto")
+        .addClass("plan my-auto overflow-hidden p-1")
         .text(text);
     
     if (newPlan.text().replace(".", "") === "No plans") { // set to italic if no plans / unchanged to differntiate
-        newPlan.addClass("font-italic");
+        newPlan.addClass("font-italic text-secondary");
     }
 
     planEl.replaceWith(newPlan);
+    savePlan(id, text);
 });
 
 
@@ -93,14 +101,14 @@ function createHourEntry(rawTime) {
 
     // hour element
     var hour = $("<div>");
-    hour.addClass("col-2 col-lg-1 rounded border-left border-top border-bottom border-dark pl-0 hour-padding text-center font-weight-bold bg-light"); // create hour display
+    hour.addClass("col-2 col-lg-1 rounded border-left border-top border-bottom border-dark pl-0 hour text-center font-weight-bold"); // create hour display
     hour.text(time + amPm);
 
     // main plan content
     var plan = $("<div>");
-    plan.addClass("plan col-8 col-lg-10 rounded border border-dark bg-light d-flex");
+    plan.addClass("plan col-8 col-lg-10 rounded border border-dark d-flex");
     var planText = $("<p>");
-    planText.addClass("my-auto font-italic");
+    planText.addClass("my-auto font-italic text-secondary overflow-hidden p-1");
     planText.text("No plans.");
     plan.append(planText);
 
@@ -117,9 +125,69 @@ function createHourEntry(rawTime) {
     timeSlotChildEl.append(hour, plan, save);
     timeSlotParentEl.append(timeSlotChildEl);
 
+    // create entry for script-level plans array
+    var planObj = {
+        id: rawTime,
+        text: "No plans.",
+    }
+    currentPlans.push(planObj);
+
     return timeSlotParentEl;
 }
 
-function updateHourEntry() { // update hourly entries (change colours as time passes, etc)
-    return;
+ // update hourly plan entries (change colours as time passes, when plans are loaded, etc)
+function updatePlans() {
+    // get current hour time
+    var currentHour = parseInt(moment().format("H")); // convert to int for easy comparisons
+
+    // loop over current plans and alter colour
+    for (var i = 0; i < currentPlans.length; i++) {
+        // id is also the hour corresponding to each plan!
+        var planHour = currentPlans[i].id;
+        // get corresponding page element
+        var pEl = $("#hour-" + planHour);
+
+        // set colour
+        if (currentHour < planHour) {
+            pEl.addClass("future");
+        }
+        else if (currentHour === planHour) {
+            pEl.addClass("present");
+        }
+        else {
+            pEl.addClass("past");
+        }
+    }
+}
+
+// save hourly entries (called whenever a plan is updated)
+function savePlan(id, text) {
+    // loop through current plans and match id
+    for (var i = 0; i < currentPlans.length; i++) {
+        if (currentPlans[i].id === parseInt(id)) { // match found
+            currentPlans[i].text = text;
+        }
+    }
+
+    // update plans list in localStorage
+    localStorage.setItem("plans", JSON.stringify(currentPlans));
+}
+
+// load saved plan data into locally stored plan data
+function loadPlans() {
+    for (var i = 0; i < currentPlans.length; i++) { // iterate through list and pull id
+        var id = currentPlans[i].id;
+        // loop through loaded plan table and find match
+        // slower nested loop, but using id is not reliant on the two being in the same order, and load is only performed once
+        for (var l = 0; l < savedPlans.length; l++) {
+            if (savedPlans[l].id === id) { // match found
+                currentPlans[i].text = savedPlans[i].text; // set text
+                var pEl = $("#hour-" + id).find("p");
+                pEl.text(currentPlans[i].text); // set element text
+                if (pEl.text().replace(".", "") != "No plans") {
+                    pEl.removeClass("font-italic text-secondary");
+                }
+            }
+        }
+    }
 }
