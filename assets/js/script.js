@@ -186,6 +186,13 @@ function updatePlans() {
     // get current hour time
     var currentHour = parseInt(moment().format("H")); // convert to int for easy comparisons
     var actualCurrentDay = currentDate.get("month") + "-" + currentDate.get("date");
+    // split dates into two parts (month / day) to get past / future
+    var displayDateArray = dayDisplay.split("-");
+    var currentDateArray = actualCurrentDay.split("-");
+    for (var i = 0; i < 2; i++) { // convert to int
+        displayDateArray[i] = parseInt(displayDateArray[i]);
+        currentDateArray[i] = parseInt(currentDateArray[i]);
+    }
 
     // loop over current plans and alter colour
     for (var i = 0; i < currentPlans.length; i++) {
@@ -210,9 +217,6 @@ function updatePlans() {
             }
         }
         else {
-            // split dates into two parts (month / day) to get past / future
-            var displayDateArray = dayDisplay.split("-");
-            var currentDateArray = actualCurrentDay.split("-");
             if (displayDateArray[0] === currentDateArray[0]) { // same month; find day
                 if (displayDateArray[1] < currentDateArray[1]) { // in past
                     pEl.removeClass("present future");
